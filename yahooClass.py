@@ -55,7 +55,7 @@ class yahoo:
         logger.info(f'toCsvPurchaseHistory({driver},{username},{passwd},{yyyymm})')
 
         # ログイン
-        self.__login(driver,username,passwd)
+        #self.__login(driver,username,passwd)
 
         # 支払い明細のURL一覧を取得する
         self.__getUrlList(driver,yyyymm)
