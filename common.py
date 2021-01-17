@@ -16,6 +16,7 @@ def set_driver(driver_path,headless_flg):
     options.add_argument('--ignore-certificate-errors')
     options.add_argument('--ignore-ssl-errors')
     options.add_argument('--incognito')          # シークレットモードの設定を付与
+    options.add_argument('--user-data-dir=profile')
 
     # ChromeのWebDriverオブジェクトを作成する。
     return Chrome(executable_path=os.getcwd() + '\\' + driver_path,options=options)
