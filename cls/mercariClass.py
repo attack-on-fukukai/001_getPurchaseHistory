@@ -13,29 +13,39 @@ class Mercari:
 
 
     ### 支払い一覧から支払い明細のURL一覧を取得する
-    def __getUrlList(self,driver):
-        driver.get('https://www.mercari.com/jp/mypage/purchased/')
-        elements = driver.find_elements_by_class_name("mypage-item-link")
-        
+    def __getUrlList(self,driver,maxCount):
+        driver.get('https://www.mercari.com/jp/mypage/purchased/')        
+        elements = driver.find_elements_by_class_name("mypage-item-link")        
         if not elements:            
         ## 自動ログインできない場合
             return False
 
-        for element in elements:
-            url = element.get_attribute("href")
-            self._urls.append(url)
-
+        maxCount = int(maxCount)
+        count = 1
+        for i in range(1,1000):            
+            driver.get(f'https://www.mercari.com/jp/mypage/purchased/?page={i}')
+            elements = driver.find_elements_by_class_name("mypage-item-link")
+            if not elements:
+                break
+            else:
+                for element in elements:
+                    if count <= maxCount:
+                        url = element.get_attribute("href")
+                        self._urls.append(url)
+                        count += 1
+                    else:
+                        break
         return True
 
 
     ### メルカリから購入履歴を取得してCSVファイルに保存する
-    def toCsvPurchaseHistory(self,driver):
+    def toCsvPurchaseHistory(self,driver,kikan):
         startTime = com.getStartTime()
         logger.info('メルカリから購入履歴を取得してCSVファイルの作成開始')
 
         ## ログイン情報は、ユーザプロファイルに書き込む        
         ## 支払い明細のURL一覧を取得する
-        ret = self.__getUrlList(driver)
+        ret = self.__getUrlList(driver,kikan)
         if not ret:
             return False
 

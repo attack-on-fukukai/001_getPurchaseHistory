@@ -14,8 +14,9 @@ class Yahoo:
 
             
     ### 支払い一覧から支払い明細のURL一覧を取得する
-    def __getUrlList(self,driver):    
-        driver.get('https://details.payment.yahoo.co.jp/PaymentDetailList')
+    def __getUrlList(self,driver,kikan):
+        kikan = kikan.replace('年','').replace('月','').strip()
+        driver.get(f'https://details.payment.yahoo.co.jp/PaymentDetailList?_indication={kikan}')
         trs = driver.find_element_by_class_name("TablePayList").find_elements_by_tag_name("tr")
         maxi = len(trs)        
         for i in range(1,maxi):            
@@ -37,14 +38,14 @@ class Yahoo:
             return wrk
 
     ### ヤフオクから購入履歴を取得してCSVファイルに保存する
-    def toCsvPurchaseHistory(self,driver):
+    def toCsvPurchaseHistory(self,driver,kikan):
         startTime = com.getStartTime()
         logger.info('ヤフオクから購入履歴を取得してCSVファイルの作成開始')
 
         ## ログイン情報は、ユーザプロファイルに書き込む        
         ## 支払い明細のURL一覧を取得する
         try:
-            self.__getUrlList(driver)
+            self.__getUrlList(driver,kikan)
         except exceptions.NoSuchElementException:
         ## 自動ログインできない場合
             return False
@@ -57,35 +58,39 @@ class Yahoo:
         datas = []
         count = 0
         for url in self._urls:
-            count += 1
+
             driver.get(url)
-            data = []
-            # 購入日
-            wrk = driver.find_elements_by_class_name('modPayList')[0].find_elements_by_tag_name('dd')[0].text
-            wrk = wrk.split()
-            data.append(wrk[0])
-            # 商品タイトル
-            wrk = self.__getFullTitle(driver,driver.find_element_by_xpath('//*[@id="itemnm"]/a').get_attribute("href"))
-            data.append(wrk)
-            # 購入価格
-            driver.get(url)
-            wrk = driver.find_elements_by_class_name('modPayList')[1].find_elements_by_tag_name('dd')[2].text
-            wrk = driver.find_element_by_xpath('//*[@id="settlePrice"]').text
-            wrk = wrk.replace(',','').replace('円','').replace('"','').strip()
-            data.append(wrk)
-            # 送料
-            wrk = driver.find_elements_by_class_name('modPayList')[1].find_elements_by_tag_name('dd')[1].text
-            wrk = wrk.replace(',','').replace('円','').replace('"','').strip()
-            data.append(wrk)
-            # 出品者ID            
-            data.append(driver.find_element_by_xpath('//*[@id="winyid"]/a').text)
-            # 取引ID
-            data.append(driver.find_element_by_xpath('//*[@id="aucID"]').text)
-            
-            datas.append(data)
+            if driver.find_element_by_xpath('//*[@id="yjContentsBody"]/div[2]/div[2]/div/dl/dd[1]').text == 'ヤフオク!':
+            ## ヤフオクだけ
+                count += 1                
+                data = []
+                # 購入日
+                wrk = driver.find_elements_by_class_name('modPayList')[0].find_elements_by_tag_name('dd')[0].text
+                wrk = wrk.split()
+                data.append(wrk[0])
+                # 商品タイトル
+                wrk = self.__getFullTitle(driver,driver.find_element_by_xpath('//*[@id="itemnm"]/a').get_attribute("href"))
+                data.append(wrk)
+                # 購入価格
+                driver.get(url)
+                wrk = driver.find_elements_by_class_name('modPayList')[1].find_elements_by_tag_name('dd')[2].text
+                wrk = driver.find_element_by_xpath('//*[@id="settlePrice"]').text
+                wrk = wrk.replace(',','').replace('円','').replace('"','').strip()
+                data.append(wrk)
+                # 送料
+                wrk = driver.find_elements_by_class_name('modPayList')[1].find_elements_by_tag_name('dd')[1].text
+                wrk = wrk.replace(',','').replace('円','').replace('"','').strip()
+                data.append(wrk)
+                # 出品者ID            
+                data.append(driver.find_element_by_xpath('//*[@id="winyid"]/a').text)
+                # 取引ID
+                data.append(driver.find_element_by_xpath('//*[@id="aucID"]').text)
+                
+                datas.append(data)
 
         ## CSVファイルを作成する
-        com.toCsv(datas,com.yahooFileName)
+        fileName = com.yahooFileName + f'({kikan})'
+        com.toCsv(datas,fileName)
 
         endTime = com.getEndTime(startTime)
         logger.info(f'ヤフオクから購入履歴を取得してCSVファイルの作成終了 >> {count}件取得 処理時間：{endTime} 秒')

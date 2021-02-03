@@ -13,9 +13,9 @@
             </p>
             <fieldset>
                 <legend>購入履歴を取得するECサイトを選択してください。(1つだけ)</legend>
-                <label><input type="radio" name="type" value="yahoo" checked>ヤフオク</label><br>
-                <label><input type="radio" name="type" value="mercari">メルカリ</label><br>
-                <label><input type="radio" name="type" value="amazon">Amazon</label>
+                <p><label><input type="radio" name="type" value="yahoo" checked>ヤフオク　</label><select id="yahoo"></select></p>
+                <p><label><input type="radio" name="type" value="mercari">メルカリ　最大 <input type="text" id="max" size="2" style="text-align: right;"> 件まで</p>
+                <p><label><input type="radio" name="type" value="amazon">Amazon　<select id="amazon"></select></label></p>
             </fieldset>
             <p>
                 <button id = "getBtn">購入履歴を取得する</button>
@@ -27,7 +27,7 @@
         <script>
             // 画面ロード時            
             window.onload = async function(){            
-                // 設定ファイルからコンボボックスの要素を設定する
+                // 設定ファイルからプロフィールコンボの要素を設定する
                 var option = document.createElement("option");
                 option.text = '';
                 option.value = '';
@@ -39,21 +39,82 @@
                     option.value = item;
                     document.getElementById("profile").appendChild(option);
                 });
-                
+
+                // ヤフオクコンボの要素を設定する
+                var option = document.createElement("option");
+                option.text = '';
+                option.value = '';
+                document.getElementById("yahoo").appendChild(option);
+                var profileList = await eel.getYahooList()();   
+                profileList.forEach(function( item ) {
+                    var option = document.createElement("option");
+                    option.text = item;
+                    option.value = item;
+                    document.getElementById("yahoo").appendChild(option);
+                });
+
+                // Amaxonコンボの要素を設定する
+                var option = document.createElement("option");
+                option.text = '';
+                option.value = '';
+                document.getElementById("amazon").appendChild(option);
+                option = document.createElement("option");
+                option.text = '過去30日間';
+                document.getElementById("amazon").appendChild(option);
+                option = document.createElement("option");
+                option.text = '過去3か月';
+                document.getElementById("amazon").appendChild(option);
+                var profileList = await eel.getAmazonList()();   
+                profileList.forEach(function( item ) {
+                    var option = document.createElement("option");
+                    option.text = item;
+                    option.value = item;
+                    document.getElementById("amazon").appendChild(option);
+                });
             }
 
             // 購入履歴を取得するボタン
             getBtn.addEventListener('click', async() => {
                 var userProfile = profile.value;
                 var type = document.getElementsByName('type');
-              
+                var kikan = '';
+                var flg = true;
+
                 if(userProfile.length == 0){
-                    alert("プロフィールを選択してください。");
+                    alert('プロフィールを選択してください。');
                 }else{                   
                     for (let i = 0; i < type.length; i++){
-		                if(type[i].checked){                            
+		                if(type[i].checked){
                             // 購入履歴を取得してCSVファイルを作成する
-                            eel.toCsvPurchaseHistory(userProfile,type[i].value);
+                            switch (type[i].value){
+                                case 'yahoo':
+                                    kikan = document.getElementById("yahoo").value;
+                                    if(kikan == 0){
+                                        flg = false;
+                                        alert('期間を選択してください');
+                                    }                                    
+                                    break;
+                                case 'amazon':
+                                    kikan = document.getElementById("amazon").value;
+                                    if(kikan == 0){
+                                        flg = false;
+                                        alert('期間を選択してください');
+                                    }
+                                    break;
+                                case 'mercari':
+                                    kikan = document.getElementById("max").value;
+                                    if(kikan == 0){
+                                        flg = false;
+                                        alert('最大取得件数を入力してください');
+                                    }else if(isNaN(kikan)){
+                                        flg = false;
+                                        alert('最大取得件数には数値を入力してください');
+                                    }
+                                    break;
+                            }
+                            if(flg){
+                                eel.toCsvPurchaseHistory(userProfile,type[i].value,kikan);
+                            }
                         }
                     }
 	            }
